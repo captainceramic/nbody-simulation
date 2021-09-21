@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall
-LDFLAGS = -Wall
+LDFLAGS = -Wall -lm
 
 nbody_sim: nbody_sim.o
 	$(CC) $(LDFLAGS) -o nbody_sim nbody_sim.o

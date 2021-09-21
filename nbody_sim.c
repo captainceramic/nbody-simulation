@@ -1,10 +1,41 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-#define NUM_TIMESTEPS 100
-#define NUM_PARTICLES 50
-#define NUM_DIMENSIONS 2
+#define NUM_TIMESTEPS 10000
+#define NUM_PARTICLES 20
+#define NUM_DIMENSIONS 3
 #define DOMAIN_SIZE 10
+#define SOFTENING 0.05f
+#define CONST_G 0.00001f
+
+void update_acceleration(double **accelerationArray,
+			 double **positionArray,
+			 double *massArray) {
+
+  double distances[NUM_DIMENSIONS];
+  double inv_r = 0.0f;
+  
+  /* This is going to be a lot of looping! */
+  for(int i = 0; i < NUM_PARTICLES; i++) {
+    for(int j = 0; j < NUM_PARTICLES; j++) {
+
+      /* For each particle, calculate the distances to each other particles and
+	 the sum of the gravitational accelerations */
+      inv_r = 0.0f;
+      for(int k = 0; k < NUM_DIMENSIONS; k++) {
+	distances[k] = positionArray[i][k] - positionArray[j][k];
+	inv_r = inv_r + pow(distances[k], 2);
+      }
+      inv_r += pow(SOFTENING, 2);
+      inv_r = pow(inv_r, -1.5f);
+
+      for(int k = 0; k < NUM_DIMENSIONS; k++) {
+	accelerationArray[i][k] += CONST_G * (distances[k] * inv_r) * massArray[j];
+      }
+    }
+  }
+}
 
 
 int main(int argc, char *argv[]) {
@@ -41,35 +72,58 @@ int main(int argc, char *argv[]) {
     mass[i] = 1.0f;
   }
 
-  double **position_before = (double **) malloc(NUM_PARTICLES * sizeof(double*));
-  double **position_after = (double **) malloc(NUM_PARTICLES * sizeof(double*));
-  double **velocity_before = (double **) malloc(NUM_PARTICLES * sizeof(double*));
-  double **velocity_after = (double **) malloc(NUM_PARTICLES * sizeof(double*));
+  double **position = (double **) malloc(NUM_PARTICLES * sizeof(double*));
+  double **acceleration = (double **) malloc(NUM_PARTICLES * sizeof(double*));
+  double **velocity = (double **) malloc(NUM_PARTICLES * sizeof(double*));
 
   for(int i = 0; i < NUM_PARTICLES; i++) {
-    position_before[i] = (double *) calloc(NUM_DIMENSIONS, sizeof(double));
-    position_after[i] = (double *) calloc(NUM_DIMENSIONS, sizeof(double));
-    velocity_before[i] = (double *) calloc(NUM_DIMENSIONS, sizeof(double));
-    velocity_after[i] = (double *) calloc(NUM_DIMENSIONS, sizeof(double));
+    position[i] = (double *) calloc(NUM_DIMENSIONS, sizeof(double));
+    velocity[i] = (double *) calloc(NUM_DIMENSIONS, sizeof(double));
+    acceleration[i] = (double *) calloc(NUM_DIMENSIONS, sizeof(double));
   }
 
   for(int i = 0; i < NUM_PARTICLES; i++) {
     for(int j = 0; j < NUM_DIMENSIONS; j++) {
-      /* randomise the initial positions */
-      position_before[i][j] = (double) DOMAIN_SIZE * rand() / RAND_MAX;
-      position_after[i][j] = (double) DOMAIN_SIZE * rand() / RAND_MAX;
+      /* randomise the initial positions,
+	 acceleration and velocities start at 0.0 */
+      position[i][j] = (double) DOMAIN_SIZE * rand() / RAND_MAX;
     }
   }
   
-  /* loop over time points, functions to update the positions. */
+  for(int i = 0; i < NUM_TIMESTEPS; i++) {
+
+    /* apply the first 'kick' and drift */
+    for(int i = 0; i < NUM_PARTICLES; i++) {
+      for(int j = 0; j < NUM_DIMENSIONS; j++) {
+	velocity[i][j] = velocity[i][j] + 0.5 * acceleration[i][j];
+	position[i][j] = position[i][j] + velocity[i][j];
+      }
+    }
+
+    /* calculate the gravitational acceleration
+       update the accelerations */
+    update_acceleration(acceleration, position, mass);
+    
+    /* second kick */
+    for(int i = 0; i < NUM_PARTICLES; i++) {
+      for(int j = 0; j < NUM_DIMENSIONS; j++) {
+	velocity[i][j] = velocity[i][j] + 0.5 * acceleration[i][j];
+      }
+    }
+   
+    /* Let's see where a given body is! */
+    printf("body 5 is at position: (%03f, %03f, %03f)\n",
+	   position[4][0], position[4][1], position[4][2]);
+
+  }
+
   /* some sort of write-out? how to save a file? */
   
   /* Clean-up allocated memory */
   free(mass);
-  free(position_before);
-  free(position_after);
-  free(velocity_before);
-  free(velocity_after);
+  free(position);
+  free(velocity);
+  free(acceleration);
   
   return(EXIT_SUCCESS);
 }
