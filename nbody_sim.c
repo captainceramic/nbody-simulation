@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define NUM_TIMESTEPS 50
+#define NUM_TIMESTEPS 100
 #define NUM_PARTICLES 2
 #define NUM_DIMENSIONS 3
 #define DOMAIN_SIZE 10
-#define SOFTENING 0.001f
+#define SOFTENING 0.0f
 #define CONST_G 1.0f
 
 void update_acceleration(double **accelerationArray,
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
     /* apply the first 'kick' and drift */
     for(int i = 0; i < NUM_PARTICLES; i++) {
       for(int j = 0; j < NUM_DIMENSIONS; j++) {
-	velocity[i][j] = velocity[i][j] - 0.5 * acceleration[i][j];
+	velocity[i][j] = velocity[i][j] + 0.5 * acceleration[i][j];
 	position[i][j] = position[i][j] + velocity[i][j];
       }
     }
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     /* second kick */
     for(int i = 0; i < NUM_PARTICLES; i++) {
       for(int j = 0; j < NUM_DIMENSIONS; j++) {
-	velocity[i][j] = velocity[i][j] - 0.5 * acceleration[i][j];
+	velocity[i][j] = velocity[i][j] + 0.5 * acceleration[i][j];
       }
     }
 
